@@ -33,6 +33,14 @@ return new class extends Migration
             // Coordinator approval tracking
             $table->foreignId('approved_by')->nullable()->after('status')->constrained('users')->nullOnDelete();
             $table->timestamp('approved_at')->nullable()->after('approved_by');
+            
+            // Distribution tracking for duplicate prevention
+            $table->date('distribution_date')->nullable()->after('approved_at');
+            $table->year('distribution_year')->nullable()->after('distribution_date'); // For yearly duplicate checking
+            $table->string('season')->nullable()->after('distribution_year'); // wet, dry, year-round
+            
+            // Add unique constraint to prevent duplicate benefits
+            $table->index(['program_beneficiary_id', 'inventory_id', 'distribution_year', 'season'], 'idx_duplicate_prevention');
         });
     }
 
@@ -44,6 +52,7 @@ return new class extends Migration
         Schema::table('program_beneficiary_items', function (Blueprint $table) {
             $table->dropForeign(['inventory_id']);
             $table->dropForeign(['approved_by']);
+            $table->dropIndex('idx_duplicate_prevention');
             $table->dropColumn([
                 'inventory_id',
                 'suggested_amount',
@@ -53,7 +62,10 @@ return new class extends Migration
                 'total_value',
                 'status',
                 'approved_by',
-                'approved_at'
+                'approved_at',
+                'distribution_date',
+                'distribution_year',
+                'season'
             ]);
         });
     }
