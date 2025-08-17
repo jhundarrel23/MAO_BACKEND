@@ -28,8 +28,8 @@ return new class extends Migration
             $table->rememberToken();
             $table->timestamps();
 
-            // ✅ Optional foreign key (if sectors table exists)
-            // $table->foreign('sector_id')->references('id')->on('sectors')->onDelete('set null');
+            // Foreign key constraint for sector
+            $table->foreign('sector_id')->references('id')->on('sector')->onDelete('set null');
         });
 
 

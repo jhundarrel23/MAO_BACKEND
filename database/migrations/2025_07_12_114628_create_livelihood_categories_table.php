@@ -23,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('livelihood_category');
+        Schema::dropIfExists('livelihood_categories');
     }
 };

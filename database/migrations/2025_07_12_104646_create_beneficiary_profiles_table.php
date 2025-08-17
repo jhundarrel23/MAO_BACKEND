@@ -63,7 +63,7 @@ return new class extends Migration
     $table->string('household_head_name')->nullable();
 
     // Emergency Contact
-    $table->integer('emergency_contact_number')->nullable();
+    $table->string('emergency_contact_number')->nullable();
 
 
 

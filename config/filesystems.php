@@ -20,7 +20,7 @@ return [
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
-    | Below you may configure as many filesystem disks as necessary, and you
+    | Below you may configure as many filesystem "disks" as necessary, and you
     | may even configure multiple disks for the same driver. Examples for
     | most supported storage drivers are configured here for reference.
     |
@@ -32,10 +32,8 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/private'),
-            'serve' => true,
+            'root' => storage_path('app'),
             'throw' => false,
-            'report' => false,
         ],
 
         'public' => [
@@ -44,7 +42,55 @@ return [
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
             'throw' => false,
-            'report' => false,
+        ],
+
+        // Agricultural System Image Storage
+        'beneficiaries' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/beneficiaries'),
+            'url' => env('APP_URL').'/storage/beneficiaries',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        'farms' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/farms'),
+            'url' => env('APP_URL').'/storage/farms',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        'programs' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/programs'),
+            'url' => env('APP_URL').'/storage/programs',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        'inventory' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/inventory'),
+            'url' => env('APP_URL').'/storage/inventory',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        'documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/documents'),
+            'url' => env('APP_URL').'/storage/documents',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        'reports' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public/reports'),
+            'url' => env('APP_URL').'/storage/reports',
+            'visibility' => 'public',
+            'throw' => false,
         ],
 
         's3' => [
@@ -57,7 +103,6 @@ return [
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
-            'report' => false,
         ],
 
     ],
