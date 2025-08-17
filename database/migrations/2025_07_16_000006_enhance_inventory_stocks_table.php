@@ -24,13 +24,8 @@ return new class extends Migration
             ])->after('movement_type');
             
             // Connection to distribution system
-            $table->foreignId('distribution_package_id')->nullable()
-                  ->after('transaction_type')
-                  ->constrained('distribution_packages')
-                  ->nullOnDelete();
-            
             $table->foreignId('program_beneficiary_item_id')->nullable()
-                  ->after('distribution_package_id')
+                  ->after('transaction_type')
                   ->constrained('program_beneficiary_items')
                   ->nullOnDelete();
             
@@ -60,12 +55,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('inventory_stocks', function (Blueprint $table) {
-            $table->dropForeign(['distribution_package_id']);
             $table->dropForeign(['program_beneficiary_item_id']);
             $table->dropColumn([
                 'movement_type',
                 'transaction_type',
-                'distribution_package_id',
                 'program_beneficiary_item_id',
                 'unit_cost',
                 'total_value',

@@ -12,12 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('program_beneficiary_items', function (Blueprint $table) {
-            // Add reference to distribution package for grouped items
-            $table->foreignId('distribution_package_id')->nullable()
-                  ->after('program_beneficiary_id')
-                  ->constrained('distribution_packages')
-                  ->nullOnDelete();
-            
             // Add inventory reference for better tracking
             $table->foreignId('inventory_id')->nullable()
                   ->after('item_name')
@@ -48,11 +42,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('program_beneficiary_items', function (Blueprint $table) {
-            $table->dropForeign(['distribution_package_id']);
             $table->dropForeign(['inventory_id']);
             $table->dropForeign(['approved_by']);
             $table->dropColumn([
-                'distribution_package_id',
                 'inventory_id',
                 'suggested_amount',
                 'coordinator_amount',

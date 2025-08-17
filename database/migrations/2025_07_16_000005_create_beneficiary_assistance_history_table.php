@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('season')->nullable(); // wet, dry, year-round
             
             // Reference tracking
-            $table->foreignId('distribution_package_id')->nullable()->constrained('distribution_packages')->nullOnDelete();
+            $table->foreignId('program_beneficiary_item_id')->nullable()->constrained('program_beneficiary_items')->nullOnDelete();
             $table->string('reference_code')->nullable(); // Additional reference
             
             // Duplicate prevention

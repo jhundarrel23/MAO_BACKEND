@@ -22,10 +22,6 @@ return new class extends Migration
             $table->enum('reservation_type', ['distribution', 'transfer', 'adjustment', 'other'])->default('distribution');
             
             // Connection to distribution system
-            $table->foreignId('distribution_package_id')->nullable()
-                  ->constrained('distribution_packages')
-                  ->nullOnDelete();
-            
             $table->foreignId('program_beneficiary_item_id')->nullable()
                   ->constrained('program_beneficiary_items')
                   ->nullOnDelete();
@@ -54,7 +50,7 @@ return new class extends Migration
             
             // Indexes for performance
             $table->index(['inventory_id', 'status']);
-            $table->index(['distribution_package_id', 'status']);
+            $table->index(['program_beneficiary_item_id', 'status']);
             $table->index('expires_at');
         });
     }
