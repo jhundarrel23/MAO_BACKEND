@@ -9,7 +9,7 @@ Instead of maintaining a separate `beneficiary_assistance_history` table, we can
 ```sql
 SELECT 
     bp.user_id,
-    u.name as beneficiary_name,
+    CONCAT(u.fname, ' ', COALESCE(u.mname, ''), ' ', u.lname) as beneficiary_name,
     sp.title as program_name,
     i.item_name,
     i.item_type,
@@ -71,7 +71,7 @@ ORDER BY pbi.distribution_year DESC;
 
 ```sql
 SELECT 
-    u.name as beneficiary_name,
+    CONCAT(u.fname, ' ', COALESCE(u.mname, ''), ' ', u.lname) as beneficiary_name,
     sp.title as program_name,
     i.item_name,
     pbi.quantity,
@@ -152,7 +152,7 @@ ORDER BY pbi.distribution_year DESC, pbi.season;
 
 ```sql
 SELECT 
-    u.name as beneficiary_name,
+    CONCAT(u.fname, ' ', COALESCE(u.mname, ''), ' ', u.lname) as beneficiary_name,
     bp.barangay,
     COUNT(pbi.id) as total_assistance_received,
     SUM(pbi.total_value) as total_value_received,
@@ -165,7 +165,7 @@ JOIN users u ON bp.user_id = u.id
 JOIN subsidy_programs sp ON pb.subsidy_program_id = sp.id
 WHERE pbi.status = 'distributed'
   AND pbi.distribution_year = ? -- Specific year
-GROUP BY bp.id, u.name, bp.barangay
+GROUP BY bp.id, u.fname, u.mname, u.lname, bp.barangay
 ORDER BY total_value_received DESC;
 ```
 
