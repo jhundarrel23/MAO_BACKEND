@@ -9,28 +9,28 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+     public function up(): void
     {
-       Schema::create('users', function (Blueprint $table) {
-    $table->id();
-    $table->string('fname');
-    $table->string('mname')->nullable();
-    $table->string('lname');
-    $table->string('extension_name')->nullable();
-    $table->string('username')->unique();
-    $table->string('email')->unique();
-    $table->enum('role', ['admin', 'coordinator', 'beneficiaries'])->default('beneficiaries');
-    $table->enum('status', ['active', 'inactive'])->default('active');
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('fname');
+            $table->string('mname')->nullable();
+            $table->string('lname');
+            $table->string('extension_name')->nullable();
+            $table->string('username')->unique();
+            $table->string('email')->unique()->nullable(); // ✅ FIX: allow null
+            $table->string('phone_number')->nullable(); 
+            $table->enum('role', ['admin', 'coordinator', 'beneficiary'])->default('beneficiary');
+            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->unsignedBigInteger('sector_id')->nullable();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
 
-    $table->unsignedBigInteger('sector_id')->nullable(); // ✅ NEW
-    $table->timestamp('email_verified_at')->nullable();
-    $table->string('password');
-    $table->rememberToken();
-    $table->timestamps();
-
-    
-
-});
+            // ✅ Optional foreign key (if sectors table exists)
+            // $table->foreign('sector_id')->references('id')->on('sectors')->onDelete('set null');
+        });
 
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
