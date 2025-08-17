@@ -222,10 +222,17 @@ class RSBSAController extends Controller
     }
 
     /**
-     * Generate RSBSA number
+     * Assign RSBSA number (provided by DA)
      */
-    public function generateRSBSANumber($id): JsonResponse
+    public function assignRSBSANumber(Request $request, $id): JsonResponse
     {
+        $validatedData = $request->validate([
+            'rsbsa_number' => 'required|string|unique:beneficiary_profiles,RSBSA_NUMBER',
+            'assigned_by_da_staff' => 'required|string|max:255',
+            'da_assignment_date' => 'required|date',
+            'remarks' => 'nullable|string|max:500'
+        ]);
+
         $enrollment = RSBSAEnrollment::findOrFail($id);
         
         if ($enrollment->status !== 'verified') {
@@ -235,34 +242,168 @@ class RSBSAController extends Controller
             ], 400);
         }
 
-        // Generate RSBSA number format: [Region][Province][Municipality][Barangay][Sequence]
-        $beneficiary = $enrollment->beneficiaryProfile;
-        $regionCode = '10'; // Region X
-        $provinceCode = '43'; // Misamis Oriental
-        $municipalityCode = '24'; // Opol
-        $barangayCode = str_pad($this->getBarangayCode($beneficiary->barangay), 2, '0', STR_PAD_LEFT);
-        
-        // Get next sequence number
-        $lastSequence = BeneficiaryProfile::where('barangay', $beneficiary->barangay)
-            ->whereNotNull('RSBSA_NUMBER')
-            ->max('RSBSA_NUMBER');
-        
-        $sequence = $lastSequence ? ((int) substr($lastSequence, -6)) + 1 : 1;
-        $sequenceFormatted = str_pad($sequence, 6, '0', STR_PAD_LEFT);
-        
-        $rsbsaNumber = $regionCode . $provinceCode . $municipalityCode . $barangayCode . $sequenceFormatted;
-        
-        // Update beneficiary profile with RSBSA number
-        $beneficiary->update([
-            'RSBSA_NUMBER' => $rsbsaNumber,
-            'SYSTEM_GENERATED_RSBSA_NUMBER' => $rsbsaNumber
+        // Update beneficiary profile with DA-provided RSBSA number
+        $enrollment->beneficiaryProfile->update([
+            'RSBSA_NUMBER' => $validatedData['rsbsa_number'],
+            'SYSTEM_GENERATED_RSBSA_NUMBER' => null, // Clear any system generated number
+        ]);
+
+        // Log the assignment in the enrollment record
+        $enrollment->update([
+            'da_rsbsa_assigned_by' => $validatedData['assigned_by_da_staff'],
+            'da_assignment_date' => $validatedData['da_assignment_date'],
+            'da_assignment_remarks' => $validatedData['remarks'] ?? null,
+            'rsbsa_number_assigned' => true,
+            'rsbsa_number_assigned_at' => now(),
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'RSBSA number generated successfully',
+            'message' => 'RSBSA number assigned successfully',
             'data' => [
-                'rsbsa_number' => $rsbsaNumber
+                'rsbsa_number' => $validatedData['rsbsa_number'],
+                'assigned_by' => $validatedData['assigned_by_da_staff'],
+                'assignment_date' => $validatedData['da_assignment_date']
+            ]
+        ]);
+    }
+
+    /**
+     * Validate RSBSA number (confirm it's working in DA system)
+     */
+    public function validateRSBSANumber(Request $request, $id): JsonResponse
+    {
+        $validatedData = $request->validate([
+            'validation_status' => 'required|boolean',
+            'validation_remarks' => 'nullable|string|max:500'
+        ]);
+
+        $enrollment = RSBSAEnrollment::findOrFail($id);
+        $beneficiary = $enrollment->beneficiaryProfile;
+        
+        if (empty($beneficiary->RSBSA_NUMBER)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'RSBSA number must be assigned first'
+            ], 400);
+        }
+
+        $beneficiary->update([
+            'rsbsa_number_validated' => $validatedData['validation_status'],
+            'rsbsa_number_validated_at' => $validatedData['validation_status'] ? now() : null,
+            'rsbsa_validated_by' => $validatedData['validation_status'] ? Auth::id() : null,
+        ]);
+
+        // Add validation log to enrollment
+        $enrollment->update([
+            'da_assignment_remarks' => ($enrollment->da_assignment_remarks ?? '') . 
+                "\nValidation: " . ($validatedData['validation_status'] ? 'VALID' : 'INVALID') . 
+                " on " . now()->format('Y-m-d H:i') . 
+                ($validatedData['validation_remarks'] ? " - " . $validatedData['validation_remarks'] : "")
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'RSBSA number validation updated',
+            'data' => [
+                'rsbsa_number' => $beneficiary->RSBSA_NUMBER,
+                'is_validated' => $beneficiary->rsbsa_number_validated,
+                'validated_at' => $beneficiary->rsbsa_number_validated_at
+            ]
+        ]);
+    }
+
+    /**
+     * Bulk assign RSBSA numbers from CSV/Excel
+     */
+    public function bulkAssignRSBSANumbers(Request $request): JsonResponse
+    {
+        $validatedData = $request->validate([
+            'assignments' => 'required|array|min:1',
+            'assignments.*.enrollment_id' => 'required|exists:rsbsa_enrollments,id',
+            'assignments.*.rsbsa_number' => 'required|string|unique:beneficiary_profiles,RSBSA_NUMBER',
+            'assigned_by_da_staff' => 'required|string|max:255',
+            'da_assignment_date' => 'required|date',
+            'batch_remarks' => 'nullable|string|max:1000'
+        ]);
+
+        $successCount = 0;
+        $errors = [];
+
+        DB::beginTransaction();
+        
+        try {
+            foreach ($validatedData['assignments'] as $index => $assignment) {
+                try {
+                    $enrollment = RSBSAEnrollment::findOrFail($assignment['enrollment_id']);
+                    
+                    if ($enrollment->status !== 'verified') {
+                        $errors[] = "Row " . ($index + 1) . ": Enrollment must be verified first";
+                        continue;
+                    }
+
+                    // Update beneficiary profile
+                    $enrollment->beneficiaryProfile->update([
+                        'RSBSA_NUMBER' => $assignment['rsbsa_number'],
+                        'SYSTEM_GENERATED_RSBSA_NUMBER' => null,
+                    ]);
+
+                    // Update enrollment record
+                    $enrollment->update([
+                        'da_rsbsa_assigned_by' => $validatedData['assigned_by_da_staff'],
+                        'da_assignment_date' => $validatedData['da_assignment_date'],
+                        'da_assignment_remarks' => $validatedData['batch_remarks'] ?? 'Bulk assignment',
+                        'rsbsa_number_assigned' => true,
+                        'rsbsa_number_assigned_at' => now(),
+                    ]);
+
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row " . ($index + 1) . ": " . $e->getMessage();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Bulk assignment completed: {$successCount} successful, " . count($errors) . " errors",
+                'data' => [
+                    'successful_assignments' => $successCount,
+                    'total_assignments' => count($validatedData['assignments']),
+                    'errors' => $errors
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Bulk assignment failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get enrollments pending RSBSA number assignment
+     */
+    public function getPendingRSBSAAssignments(): JsonResponse
+    {
+        $pendingEnrollments = RSBSAEnrollment::with(['user', 'beneficiaryProfile'])
+            ->where('status', 'verified')
+            ->where('rsbsa_number_assigned', false)
+            ->whereHas('beneficiaryProfile', function($query) {
+                $query->whereNull('RSBSA_NUMBER');
+            })
+            ->orderBy('verified_at', 'asc')
+            ->paginate(50);
+
+        return response()->json([
+            'success' => true,
+            'data' => $pendingEnrollments,
+            'summary' => [
+                'total_pending' => $pendingEnrollments->total(),
+                'oldest_pending' => $pendingEnrollments->first()?->verified_at,
             ]
         ]);
     }
@@ -468,18 +609,5 @@ class RSBSAController extends Controller
         }
     }
 
-    private function getBarangayCode(string $barangay): int
-    {
-        // Map barangay names to codes (this should be in a database table)
-        $barangayCodes = [
-            'Awang' => 1, 'Barra' => 2, 'Bonbon' => 3, 'Bulak' => 4, 'Bunga' => 5,
-            'Igpit' => 6, 'Lower Loboc' => 7, 'Lumanglas' => 8, 'Malanang' => 9,
-            'Nasipit' => 10, 'Patag' => 11, 'Poblacion' => 12, 'Pook' => 13,
-            'Puntod' => 14, 'Sangay Daku' => 15, 'Sangay Gamay' => 16, 'Simunul' => 17,
-            'Sinaman' => 18, 'Taboc' => 19, 'Tingalan' => 20, 'Tomi' => 21,
-            'Tupang Bato' => 22, 'Upper Loboc' => 23, 'Villaflor' => 24
-        ];
 
-        return $barangayCodes[$barangay] ?? 99;
-    }
 }
