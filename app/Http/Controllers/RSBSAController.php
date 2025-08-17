@@ -222,14 +222,12 @@ class RSBSAController extends Controller
     }
 
     /**
-     * Assign RSBSA number (provided by DA)
+     * Assign RSBSA number (by municipal staff)
      */
     public function assignRSBSANumber(Request $request, $id): JsonResponse
     {
         $validatedData = $request->validate([
             'rsbsa_number' => 'required|string|unique:beneficiary_profiles,RSBSA_NUMBER',
-            'assigned_by_da_staff' => 'required|string|max:255',
-            'da_assignment_date' => 'required|date',
             'remarks' => 'nullable|string|max:500'
         ]);
 
@@ -242,7 +240,7 @@ class RSBSAController extends Controller
             ], 400);
         }
 
-        // Update beneficiary profile with DA-provided RSBSA number
+        // Update beneficiary profile with RSBSA number
         $enrollment->beneficiaryProfile->update([
             'RSBSA_NUMBER' => $validatedData['rsbsa_number'],
             'SYSTEM_GENERATED_RSBSA_NUMBER' => null, // Clear any system generated number
@@ -250,9 +248,9 @@ class RSBSAController extends Controller
 
         // Log the assignment in the enrollment record
         $enrollment->update([
-            'da_rsbsa_assigned_by' => $validatedData['assigned_by_da_staff'],
-            'da_assignment_date' => $validatedData['da_assignment_date'],
-            'da_assignment_remarks' => $validatedData['remarks'] ?? null,
+            'rsbsa_assigned_by' => Auth::user()->fname . ' ' . Auth::user()->lname,
+            'rsbsa_assignment_date' => now()->toDateString(),
+            'rsbsa_assignment_remarks' => $validatedData['remarks'] ?? null,
             'rsbsa_number_assigned' => true,
             'rsbsa_number_assigned_at' => now(),
         ]);
@@ -262,8 +260,8 @@ class RSBSAController extends Controller
             'message' => 'RSBSA number assigned successfully',
             'data' => [
                 'rsbsa_number' => $validatedData['rsbsa_number'],
-                'assigned_by' => $validatedData['assigned_by_da_staff'],
-                'assignment_date' => $validatedData['da_assignment_date']
+                'assigned_by' => Auth::user()->fname . ' ' . Auth::user()->lname,
+                'assignment_date' => now()->toDateString()
             ]
         ]);
     }
@@ -296,9 +294,10 @@ class RSBSAController extends Controller
 
         // Add validation log to enrollment
         $enrollment->update([
-            'da_assignment_remarks' => ($enrollment->da_assignment_remarks ?? '') . 
+            'rsbsa_assignment_remarks' => ($enrollment->rsbsa_assignment_remarks ?? '') . 
                 "\nValidation: " . ($validatedData['validation_status'] ? 'VALID' : 'INVALID') . 
                 " on " . now()->format('Y-m-d H:i') . 
+                " by " . Auth::user()->fname . ' ' . Auth::user()->lname .
                 ($validatedData['validation_remarks'] ? " - " . $validatedData['validation_remarks'] : "")
         ]);
 
@@ -322,8 +321,6 @@ class RSBSAController extends Controller
             'assignments' => 'required|array|min:1',
             'assignments.*.enrollment_id' => 'required|exists:rsbsa_enrollments,id',
             'assignments.*.rsbsa_number' => 'required|string|unique:beneficiary_profiles,RSBSA_NUMBER',
-            'assigned_by_da_staff' => 'required|string|max:255',
-            'da_assignment_date' => 'required|date',
             'batch_remarks' => 'nullable|string|max:1000'
         ]);
 
@@ -350,9 +347,9 @@ class RSBSAController extends Controller
 
                     // Update enrollment record
                     $enrollment->update([
-                        'da_rsbsa_assigned_by' => $validatedData['assigned_by_da_staff'],
-                        'da_assignment_date' => $validatedData['da_assignment_date'],
-                        'da_assignment_remarks' => $validatedData['batch_remarks'] ?? 'Bulk assignment',
+                        'rsbsa_assigned_by' => Auth::user()->fname . ' ' . Auth::user()->lname,
+                        'rsbsa_assignment_date' => now()->toDateString(),
+                        'rsbsa_assignment_remarks' => $validatedData['batch_remarks'] ?? 'Bulk assignment',
                         'rsbsa_number_assigned' => true,
                         'rsbsa_number_assigned_at' => now(),
                     ]);

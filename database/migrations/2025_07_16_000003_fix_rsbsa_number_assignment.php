@@ -11,17 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Add fields to track DA-assigned RSBSA numbers
+        // Add fields to track RSBSA number assignments by municipal staff
         Schema::table('rsbsa_enrollments', function (Blueprint $table) {
-            // DA RSBSA Number Assignment Tracking
-            $table->string('da_rsbsa_assigned_by')->nullable()->after('registration_expires_at');
-            $table->date('da_assignment_date')->nullable()->after('da_rsbsa_assigned_by');
-            $table->text('da_assignment_remarks')->nullable()->after('da_assignment_date');
-            $table->boolean('rsbsa_number_assigned')->default(false)->after('da_assignment_remarks');
+            // RSBSA Number Assignment Tracking
+            $table->string('rsbsa_assigned_by')->nullable()->after('registration_expires_at');
+            $table->date('rsbsa_assignment_date')->nullable()->after('rsbsa_assigned_by');
+            $table->text('rsbsa_assignment_remarks')->nullable()->after('rsbsa_assignment_date');
+            $table->boolean('rsbsa_number_assigned')->default(false)->after('rsbsa_assignment_remarks');
             $table->timestamp('rsbsa_number_assigned_at')->nullable()->after('rsbsa_number_assigned');
             
             // Add index for tracking assignments
-            $table->index(['rsbsa_number_assigned', 'da_assignment_date']);
+            $table->index(['rsbsa_number_assigned', 'rsbsa_assignment_date']);
         });
 
         // Add fields to beneficiary_profiles for better RSBSA tracking
@@ -45,11 +45,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('rsbsa_enrollments', function (Blueprint $table) {
-            $table->dropIndex(['rsbsa_number_assigned', 'da_assignment_date']);
+            $table->dropIndex(['rsbsa_number_assigned', 'rsbsa_assignment_date']);
             $table->dropColumn([
-                'da_rsbsa_assigned_by',
-                'da_assignment_date', 
-                'da_assignment_remarks',
+                'rsbsa_assigned_by',
+                'rsbsa_assignment_date', 
+                'rsbsa_assignment_remarks',
                 'rsbsa_number_assigned',
                 'rsbsa_number_assigned_at'
             ]);
