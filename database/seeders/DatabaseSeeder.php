@@ -29,7 +29,6 @@ class DatabaseSeeder extends Seeder
             // Inventory system
             InventoriesSeeder::class,
             InventoryStocksSeeder::class,
-            InventoryCurrentStocksSeeder::class,
             
             // Distribution guidelines
             DistributionGuidelinesSeeder::class,
