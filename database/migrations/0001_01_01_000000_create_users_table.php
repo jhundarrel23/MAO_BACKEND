@@ -22,14 +22,11 @@ return new class extends Migration
             $table->string('phone_number')->nullable(); 
             $table->enum('role', ['admin', 'coordinator', 'beneficiary'])->default('beneficiary');
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->unsignedBigInteger('sector_id')->nullable();
+            $table->foreignId('sector_id')->nullable()->constrained('sectors')->nullOnDelete();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
-
-            // ✅ Optional foreign key (if sectors table exists)
-            // $table->foreign('sector_id')->references('id')->on('sectors')->onDelete('set null');
         });
 
 

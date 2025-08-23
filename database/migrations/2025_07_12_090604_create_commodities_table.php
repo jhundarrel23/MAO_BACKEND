@@ -19,7 +19,7 @@ return new class extends Migration
                   ->cascadeOnDelete();
             $table->foreignId('sector_id')
                   ->nullable()
-                  ->constrained('sector')
+                  ->constrained('sectors')
                   ->nullOnDelete();
             $table->timestamps();
         });

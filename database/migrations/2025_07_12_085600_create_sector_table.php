@@ -11,18 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('sector', function (Blueprint $table) {
-    $table->id();
-    $table->string('sector_name'); 
-    $table->enum('status', ['active', 'inactive'])->default('active');
-    $table->unsignedBigInteger('created_by')->nullable();
-    $table->timestamps();
+        Schema::create('sectors', function (Blueprint $table) {
+            $table->id();
+            $table->string('sector_name', 100); 
+            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->foreignId('created_by')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->timestamps();
+            $table->softDeletes();
 
-    $table->softDeletes(); // ✅ This enables soft deletes (adds deleted_at column)
-
-    $table->foreign('created_by')->references('id')->on('users')->cascadeOnDelete();
-});
-
+            // Index for performance
+            $table->index(['status']);
+        });
     }
 
     /**
@@ -30,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('section');
+        Schema::dropIfExists('sectors');
     }
 };
