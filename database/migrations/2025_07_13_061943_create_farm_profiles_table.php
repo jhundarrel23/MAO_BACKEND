@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('farm_profiles', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('beneficiary_id')->constrained('beneficiary_profiles')->onDelete('cascade');
+    $table->foreignId('beneficiary_id')->constrained('beneficiary_details')->onDelete('cascade');
     $table->foreignId('livelihood_category_id')->constrained('livelihood_categories');
     $table->timestamps();
 });

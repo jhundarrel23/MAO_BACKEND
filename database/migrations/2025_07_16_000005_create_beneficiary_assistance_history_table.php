@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('beneficiary_assistance_history', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('beneficiary_id')->constrained('beneficiary_profiles')->onDelete('cascade');
+            $table->foreignId('beneficiary_id')->constrained('beneficiary_details')->onDelete('cascade');
             $table->foreignId('subsidy_program_id')->constrained('subsidy_programs')->onDelete('cascade');
             $table->string('assistance_type'); // seed, fertilizer, cash, fuel, etc.
             $table->string('item_name');
