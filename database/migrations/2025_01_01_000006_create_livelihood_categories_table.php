@@ -6,23 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('livelihood_categories', function (Blueprint $table) {
             $table->id();
-            $table->string('livelihood_category_name'); // e.g. farmer, farmworker, fisherfolk, agri_youth
+            $table->string('category_name', 100);
+            $table->text('description')->nullable();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('livelihood_category');
+        Schema::dropIfExists('livelihood_categories');
     }
 };

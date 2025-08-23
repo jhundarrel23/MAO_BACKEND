@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-     Schema::create('barangays', function (Blueprint $table) {
-    $table->id();
-    $table->string('barangay_name')->unique(); // Poblacion, Taboc, etc.
-    $table->timestamps();
-});
-
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('sector_id')->references('id')->on('sectors')->nullOnDelete();
+        });
     }
 
     /**
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('barangays');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['sector_id']);
+        });
     }
 };
