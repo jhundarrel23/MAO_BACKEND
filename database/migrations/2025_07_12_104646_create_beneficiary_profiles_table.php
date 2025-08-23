@@ -9,8 +9,8 @@ return new class extends Migration
     /**
      * Run the migrations.
      * 
-     * This table stores detailed personal information for users with role='beneficiary'
-     * This is the main table for beneficiary personal details and verification status
+     * This table stores comprehensive personal information for users with role='beneficiary'
+     * This is the main table for beneficiary personal details, verification status, and profile management
      */
     public function up(): void
     {
@@ -18,37 +18,49 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             
-            // RSBSA Numbers - Fixed to handle string format like "10-43-21-015-000107"
-            $table->string('system_generated_rsbsa_number')->nullable(); // System generated
-            $table->string('manual_rsbsa_number')->nullable(); // Manually added by coordinator
-            
-            // RSBSA Verification Status
-            $table->enum('rsbsa_verification_status', ['not_verified', 'pending', 'verified', 'rejected'])->default('not_verified');
-            $table->text('rsbsa_verification_notes')->nullable(); // Coordinator notes for verification
+            // =================================================================
+            // RSBSA INFORMATION & VERIFICATION
+            // =================================================================
+            $table->string('system_generated_rsbsa_number', 50)->nullable()->unique();
+            $table->string('manual_rsbsa_number', 50)->nullable();
+            $table->enum('rsbsa_verification_status', [
+                'not_verified', 'pending', 'verified', 'rejected'
+            ])->default('not_verified');
+            $table->text('rsbsa_verification_notes')->nullable();
             $table->timestamp('rsbsa_verified_at')->nullable();
             $table->foreignId('rsbsa_verified_by')->nullable()->constrained('users')->nullOnDelete();
 
-            // Location Information
-            $table->string('barangay');
-            $table->string('municipality')->default('Opol');
-            $table->string('province')->default('Misamis Oriental');
-            $table->string('region')->default('X');
+            // =================================================================
+            // LOCATION INFORMATION  
+            // =================================================================
+            $table->string('barangay', 100);
+            $table->string('municipality', 100)->default('Opol');
+            $table->string('province', 100)->default('Misamis Oriental');
+            $table->string('region', 100)->default('Region X (Northern Mindanao)');
 
-            // Contact Information - Standardized as string
-            $table->string('contact_number');
-            $table->string('emergency_contact_number')->nullable(); // Fixed: changed from integer
+            // =================================================================
+            // CONTACT INFORMATION
+            // =================================================================
+            $table->string('contact_number', 20);
+            $table->string('emergency_contact_number', 20)->nullable();
 
-            // Personal Information
+            // =================================================================
+            // PERSONAL INFORMATION
+            // =================================================================
             $table->date('birth_date');
-            $table->string('place_of_birth');
+            $table->string('place_of_birth', 150)->nullable();
             $table->enum('sex', ['male', 'female']);
-            $table->string('civil_status')->nullable(); // e.g., single, married, etc.
-            $table->string('name_of_spouse')->nullable();
+            $table->enum('civil_status', [
+                'single', 'married', 'widowed', 'separated', 'divorced'
+            ])->nullable();
+            $table->string('name_of_spouse', 150)->nullable();
 
-            // Education
+            // =================================================================
+            // EDUCATIONAL & DEMOGRAPHIC INFORMATION
+            // =================================================================
             $table->enum('highest_education', [
                 'None',
-                'Pre-school',
+                'Pre-school', 
                 'Elementary',
                 'Junior High School',
                 'Senior High School',
@@ -56,45 +68,79 @@ return new class extends Migration
                 'College',
                 'Post Graduate'
             ])->nullable();
-
-            // Religion & PWD
-            $table->string('religion')->nullable();
+            $table->string('religion', 100)->nullable();
             $table->boolean('is_pwd')->default(false);
 
-            // ID Information
+            // =================================================================
+            // GOVERNMENT ID INFORMATION
+            // =================================================================
             $table->enum('has_government_id', ['yes', 'no'])->default('no');
-            $table->string('gov_id_type')->nullable();
-            $table->string('gov_id_number')->nullable();
+            $table->string('gov_id_type', 100)->nullable();
+            $table->string('gov_id_number', 100)->nullable();
 
-            // Association Membership
+            // =================================================================
+            // ASSOCIATION & ORGANIZATION MEMBERSHIP
+            // =================================================================
             $table->enum('is_association_member', ['yes', 'no'])->default('no');
-            $table->string('association_name')->nullable();
+            $table->string('association_name', 200)->nullable();
 
-            // Household Information
-            $table->string('mothers_maiden_name')->nullable();
+            // =================================================================
+            // HOUSEHOLD INFORMATION
+            // =================================================================
+            $table->string('mothers_maiden_name', 150)->nullable();
             $table->boolean('is_household_head')->default(false);
-            $table->string('household_head_name')->nullable();
+            $table->string('household_head_name', 150)->nullable();
 
-            // Profile Completion and Verification System
-            $table->enum('profile_completion_status', ['incomplete', 'completed', 'verified', 'needs_update'])->default('incomplete');
+            // =================================================================
+            // PROFILE COMPLETION & VERIFICATION SYSTEM
+            // =================================================================
+            $table->enum('profile_completion_status', [
+                'incomplete', 'completed', 'verified', 'needs_update'
+            ])->default('incomplete');
             $table->decimal('completion_percentage', 5, 2)->default(0.00); // 0.00 to 100.00
             $table->boolean('is_profile_verified')->default(false);
-            $table->text('verification_notes')->nullable(); // Coordinator notes
+            $table->text('verification_notes')->nullable();
             $table->timestamp('profile_verified_at')->nullable();
             $table->foreignId('profile_verified_by')->nullable()->constrained('users')->nullOnDelete();
             
-            // Data source tracking
-            $table->enum('data_source', ['self_registration', 'coordinator_input', 'da_import'])->default('self_registration');
+            // =================================================================
+            // DATA SOURCE & AUDIT TRACKING
+            // =================================================================
+            $table->enum('data_source', [
+                'self_registration', 'coordinator_input', 'da_import', 'system_migration'
+            ])->default('self_registration');
             $table->timestamp('last_updated_by_beneficiary')->nullable();
-
+            $table->json('completion_tracking')->nullable(); // Track which sections are completed
+            
+            // =================================================================
+            // SYSTEM TIMESTAMPS
+            // =================================================================
             $table->timestamps();
+            $table->softDeletes(); // Enable soft deletes for data protection
 
-            // Indexes for performance
-            $table->index(['rsbsa_verification_status']);
-            $table->index(['profile_completion_status']);
-            $table->index(['barangay']);
-            $table->index(['system_generated_rsbsa_number']);
-            $table->index(['manual_rsbsa_number']);
+            // =================================================================
+            // DATABASE INDEXES FOR PERFORMANCE
+            // =================================================================
+            $table->index(['user_id']); // Primary user lookup
+            $table->index(['rsbsa_verification_status']); // RSBSA status filtering
+            $table->index(['profile_completion_status']); // Profile status filtering
+            $table->index(['barangay']); // Location-based queries
+            $table->index(['is_profile_verified']); // Verification filtering
+            $table->index(['data_source']); // Data source filtering
+            $table->index(['created_at']); // Registration date sorting
+            
+            // Composite indexes for common query patterns
+            $table->index(['barangay', 'profile_completion_status']); // Location + status
+            $table->index(['rsbsa_verification_status', 'profile_completion_status']); // Dual status
+            
+            // =================================================================
+            // DATA CONSTRAINTS
+            // =================================================================
+            // Ensure unique user_id (one beneficiary detail per user)
+            $table->unique(['user_id'], 'unique_user_beneficiary_detail');
+            
+            // Ensure RSBSA numbers are unique when not null
+            $table->unique(['system_generated_rsbsa_number'], 'unique_system_rsbsa');
         });
     }
 
