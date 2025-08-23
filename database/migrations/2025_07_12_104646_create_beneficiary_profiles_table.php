@@ -21,7 +21,7 @@ return new class extends Migration
             // =================================================================
             // RSBSA INFORMATION & VERIFICATION
             // =================================================================
-            $table->string('system_generated_rsbsa_number', 50)->nullable()->unique();
+            $table->string('system_generated_rsbsa_number', 50)->nullable();
             $table->string('manual_rsbsa_number', 50)->nullable();
             $table->enum('rsbsa_verification_status', [
                 'not_verified', 'pending', 'verified', 'rejected'
@@ -97,7 +97,7 @@ return new class extends Migration
             $table->enum('profile_completion_status', [
                 'incomplete', 'completed', 'verified', 'needs_update'
             ])->default('incomplete');
-            $table->decimal('completion_percentage', 5, 2)->default(0.00); // 0.00 to 100.00
+            $table->decimal('completion_percentage', 5, 2)->default(0.00);
             $table->boolean('is_profile_verified')->default(false);
             $table->text('verification_notes')->nullable();
             $table->timestamp('profile_verified_at')->nullable();
@@ -110,37 +110,31 @@ return new class extends Migration
                 'self_registration', 'coordinator_input', 'da_import', 'system_migration'
             ])->default('self_registration');
             $table->timestamp('last_updated_by_beneficiary')->nullable();
-            $table->json('completion_tracking')->nullable(); // Track which sections are completed
+            $table->json('completion_tracking')->nullable();
             
             // =================================================================
             // SYSTEM TIMESTAMPS
             // =================================================================
             $table->timestamps();
-            $table->softDeletes(); // Enable soft deletes for data protection
+            $table->softDeletes();
 
             // =================================================================
-            // DATABASE INDEXES FOR PERFORMANCE
+            // DATABASE INDEXES - SHORT NAMES TO AVOID MYSQL LIMIT
             // =================================================================
-            $table->index(['user_id']); // Primary user lookup
-            $table->index(['rsbsa_verification_status']); // RSBSA status filtering
-            $table->index(['profile_completion_status']); // Profile status filtering
-            $table->index(['barangay']); // Location-based queries
-            $table->index(['is_profile_verified']); // Verification filtering
-            $table->index(['data_source']); // Data source filtering
-            $table->index(['created_at']); // Registration date sorting
+            $table->unique(['user_id'], 'bd_user_unique');
+            $table->unique(['system_generated_rsbsa_number'], 'bd_sys_rsbsa_unique');
             
-            // Composite indexes for common query patterns
-            $table->index(['barangay', 'profile_completion_status']); // Location + status
-            $table->index(['rsbsa_verification_status', 'profile_completion_status']); // Dual status
+            // Short index names (under 64 characters)
+            $table->index(['rsbsa_verification_status'], 'bd_rsbsa_status_idx');
+            $table->index(['profile_completion_status'], 'bd_profile_status_idx');
+            $table->index(['barangay'], 'bd_barangay_idx');
+            $table->index(['is_profile_verified'], 'bd_verified_idx');
+            $table->index(['data_source'], 'bd_data_source_idx');
+            $table->index(['created_at'], 'bd_created_idx');
             
-            // =================================================================
-            // DATA CONSTRAINTS
-            // =================================================================
-            // Ensure unique user_id (one beneficiary detail per user)
-            $table->unique(['user_id'], 'unique_user_beneficiary_detail');
-            
-            // Ensure RSBSA numbers are unique when not null
-            $table->unique(['system_generated_rsbsa_number'], 'unique_system_rsbsa');
+            // Composite indexes with short names
+            $table->index(['barangay', 'profile_completion_status'], 'bd_brgy_status_idx');
+            $table->index(['rsbsa_verification_status', 'profile_completion_status'], 'bd_dual_status_idx');
         });
     }
 
