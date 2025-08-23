@@ -27,10 +27,8 @@ return new class extends Migration
                 'adjustment', 'initial_stock'
             ]);
             
-            // Connection to distribution system
-            $table->foreignId('program_beneficiary_item_id')->nullable()
-                  ->constrained('program_beneficiary_items')
-                  ->nullOnDelete();
+            // Connection to distribution system (foreign key added later)
+            $table->unsignedBigInteger('program_beneficiary_item_id')->nullable();
             
             // Enhanced tracking fields
             $table->decimal('unit_cost', 10, 2)->nullable(); // Cost per unit

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('phone_number')->nullable(); 
             $table->enum('role', ['admin', 'coordinator', 'beneficiary'])->default('beneficiary');
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->foreignId('sector_id')->nullable()->constrained('sectors')->nullOnDelete();
+            $table->unsignedBigInteger('sector_id')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
